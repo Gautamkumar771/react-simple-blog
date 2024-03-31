@@ -54,7 +54,7 @@ export default function Blog(){
 
         <hr/>
 
-        {/* Section where submitted blogs will be displayed */}
+        {/* Section where submitted blogs will be displayed on ui  */}
         <h2> Blogs </h2>
         {/* <h3>{title}</h3>
         <p>{Content}</p> */}
@@ -69,7 +69,7 @@ export default function Blog(){
         )
     }
 
-//Row component to introduce a new row section in the form
+//Row component to introduce a new row section in the form 
 function Row(props){
     const{label} = props;
     return(
