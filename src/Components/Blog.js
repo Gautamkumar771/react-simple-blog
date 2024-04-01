@@ -7,6 +7,8 @@ export default function Blog(){
     // const [content,setContent] = useState("");
     const [formData, setformData] = useState({title:"", content:""})
     const [blogs, setBlogs] =  useState([]);
+    //using the concept of usereduser
+    
     
     //useRef hook initialized
     const titleRef = useRef(null);
