@@ -1,14 +1,29 @@
 //Blogging App using Hooks
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useReducer } from "react";
+import {db} from "../firebaseInit"
+
+import { collection, addDoc } from "firebase/firestore"; 
+
+function blogsReduser(state, action){
+  switch(action.type){
+case "Add":
+    return[action.blog, ...state];
+    case "remove":
+    return state.filter((blog,index)=> index!==action.index)
+    default :
+    return[];
+  }
+}
 
 export default function Blog(){
 
     // const [title,setTitle] = useState("");
     // const [content,setContent] = useState("");
     const [formData, setformData] = useState({title:"", content:""})
-    const [blogs, setBlogs] =  useState([]);
+
+    // const [blogs, setBlogs] =  useState([]);
     //using the concept of usereduser
-    
+    const[blogs, dispatch] = useReducer(blogsReduser , [] );
     
     //useRef hook initialized
     const titleRef = useRef(null);
@@ -39,20 +54,39 @@ export default function Blog(){
         }
       }, [blogs]);
 
-    function handleSubmit(e){
+   async function handleSubmit(e){
         e.preventDefault();
-
-        setBlogs([{title: formData.title, content:formData.content}, ...blogs]);
-        setformData({title:"", content:""});
-        //Setting focus on title after adding a blog
         titleRef.current.focus();
-        console.log(blogs);
+       
+
+       // setBlogs([{title: formData.title, content:formData.content}, ...blogs]);
+       dispatch({type:"Add", blog: {title: formData.title, content:formData.content}})
+      
+
+        
+        //Setting focus on title after adding a blog
+       
+ try {
+    const docRef = await addDoc(collection(db, "blogs"), {
+        title: formData.title,
+        content: formData.content,
+      createdOn: new Date()
+    });
+    console.log("Document written with ID: ", docRef.id);
+  } catch (e) {
+    console.error("Error adding document: ", e);
+  }
+  setformData({title:"", content:""});
+ 
+ 
+     
+  
     }
 
     function removeBlog(i){
 
-        setBlogs( blogs.filter((blog,index)=> index !== i));
- 
+        //setBlogs( blogs.filter((blog,index)=> index !== i));
+       dispatch({type:"Remove", index:i})
      }
 
     return(
