@@ -1,92 +1,101 @@
-//Blogging App using Hooks
-import { useState, useRef, useEffect, useReducer } from "react";
-import {db} from "../firebaseInit"
+//Blogging App with Firebase
+import { useState, useRef, useEffect } from "react";
 
-import { collection, addDoc } from "firebase/firestore"; 
+//Import fireStore reference from frebaseInit file
+import {db} from "../firebaseInit";
 
-function blogsReduser(state, action){
-  switch(action.type){
-case "Add":
-    return[action.blog, ...state];
-    case "remove":
-    return state.filter((blog,index)=> index!==action.index)
-    default :
-    return[];
-  }
-}
+//Import all the required functions from fireStore
+import { collection, deleteDoc, doc, getDocs, onSnapshot, setDoc} from "firebase/firestore"; 
 
 export default function Blog(){
 
-    // const [title,setTitle] = useState("");
-    // const [content,setContent] = useState("");
     const [formData, setformData] = useState({title:"", content:""})
+    const [blogs, setBlogs] =  useState([]);
 
-    // const [blogs, setBlogs] =  useState([]);
-    //using the concept of usereduser
-    const[blogs, dispatch] = useReducer(blogsReduser , [] );
-    
-    //useRef hook initialized
     const titleRef = useRef(null);
 
-    // 1. Combination of componentDidMount and componentDidUpdate
-    // Runs on mount and then every upadate
-    // useEffect(() => {
-    //   console.log("Running useEffect");
-    // });
-
-    // 2. Just runs on mount because it has no dependency
-    // Focus in Title input on mount
     useEffect(() => {
-        titleRef.current.focus();
+        titleRef.current.focus()
     },[]);
 
     useEffect(() => {
-        // 3. Required to add Title of the latest blog as page's title
-        // Show Dependency Injection of blogs
-        // Helps us avoid rerun logic on title and content change
-        // Still has both DidMount and DidUpdate feature
         
-        console.log("Runs on Blogs Mount/Update!!");
-        if (blogs.length && blogs[0].title) {
-          document.title = blogs[0].title;
-        } else {
-          document.title = "No blogs!";
-        }
-      }, [blogs]);
+        /*********************************************************************** */
+        /** get all the documents from the fireStore using getDocs() */ 
+        /*********************************************************************** */
+        // async function fetchData(){
+        //     const snapShot =await getDocs(collection(db, "blogs"));
+        //     console.log(snapShot);
 
-   async function handleSubmit(e){
+        //     const blogs = snapShot.docs.map((doc) => {
+        //         return{
+        //             id: doc.id,
+        //             ...doc.data()
+        //         }
+        //     })
+        //     console.log(blogs);
+        //     setBlogs(blogs);
+
+        // }
+
+        // fetchData();
+        /*********************************************************************** */
+
+
+        /*********************************************************************** */
+        /** Get RealTime Updates from the databse using onSnapshot() */ 
+        /*********************************************************************** */
+
+        const unsub =  onSnapshot(collection(db,"blogs"), (snapShot) => {
+            const blogs = snapShot.docs.map((doc) => {
+                    return{
+                        id: doc.id,
+                        ...doc.data()
+                    }
+                })
+                console.log(blogs);
+                setBlogs(blogs);
+        })
+
+        /*********************************************************************** */
+    },[]);
+
+    async function handleSubmit(e){
         e.preventDefault();
         titleRef.current.focus();
-       
 
-       // setBlogs([{title: formData.title, content:formData.content}, ...blogs]);
-       dispatch({type:"Add", blog: {title: formData.title, content:formData.content}})
-      
+        // Commenting setBlogs() as realtime Updates will be recieved from the database
+        //setBlogs([{title: formData.title,content:formData.content}, ...blogs]);
 
+        /*********************************************************************** */
+        /** Add a new document with an auto generated id. */ 
+        /*********************************************************************** */
+
+        const docRef = doc(collection(db, "blogs"))
+            
+        await setDoc(docRef, {
+                title: formData.title,
+                content: formData.content,
+                createdOn: new Date()
+            });
+
+        /*********************************************************************** */
         
-        //Setting focus on title after adding a blog
-       
- try {
-    const docRef = await addDoc(collection(db, "blogs"), {
-        title: formData.title,
-        content: formData.content,
-      createdOn: new Date()
-    });
-    console.log("Document written with ID: ", docRef.id);
-  } catch (e) {
-    console.error("Error adding document: ", e);
-  }
-  setformData({title:"", content:""});
- 
- 
-     
-  
+        setformData({title: "", content: ""});
     }
 
-    function removeBlog(i){
+    async function removeBlog(id){
 
         //setBlogs( blogs.filter((blog,index)=> index !== i));
-       dispatch({type:"Remove", index:i})
+
+        /*********************************************************************** */
+        /** Deleting a document from the Firestore */ 
+        /*********************************************************************** */
+        const docRef = doc(db,"blogs",id);
+        await deleteDoc(docRef);
+
+        /*********************************************************************** */
+ 
      }
 
     return(
@@ -99,8 +108,8 @@ export default function Blog(){
                 <Row label="Title">
                         <input className="input"
                                 placeholder="Enter the Title of the Blog here.."
-                                value={formData.title}
                                 ref = {titleRef}
+                                value={formData.title}
                                 onChange = {(e) => setformData({title: e.target.value, content:formData.content})}
                         />
                 </Row >
@@ -108,6 +117,7 @@ export default function Blog(){
                 <Row label="Content">
                         <textarea className="input content"
                                 placeholder="Content of the Blog goes here.."
+                                required
                                 value={formData.content}
                                 onChange = {(e) => setformData({title: formData.title,content: e.target.value})}
                         />
@@ -123,14 +133,15 @@ export default function Blog(){
         {/* Section where submitted blogs will be displayed */}
         <h2> Blogs </h2>
         {blogs.map((blog,i) => (
-            <div className="blog">
+            <div className="blog" key={i}>
                 <h3>{blog.title}</h3>
                 <hr/>
                 <p>{blog.content}</p>
 
                 <div className="blog-btn">
                         <button onClick={() => {
-                            removeBlog(i)
+                            // passing the blog id instead of index of the array to remove the document from the database
+                            removeBlog(blog.id)
                         }}
                         className="btn remove">
 
